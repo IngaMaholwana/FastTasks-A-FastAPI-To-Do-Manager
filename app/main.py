@@ -3,28 +3,23 @@ from fastapi import FastAPI
 from .routes import todos
 from .utils.exceptions import add_exception_handlers
 
-# Create FastAPI application
 app = FastAPI(
-    title="Enhanced FastAPI Example",
-    description="A more structured FastAPI application with proper models and error handling",
-    version="0.2.0"
+    title="To-Do List Application",
+    description="A FastAPI application for managing a to-do list with CRUD operations.",
+    version="1.0.0"
 )
 
-# Add routes
 app.include_router(todos.router)
 
-# Configure exception handlers
 add_exception_handlers(app)
 
-# Root endpoint
 @app.get("/", tags=["root"])
 async def root():
-    """API root endpoint"""
     return {
-        "message": "Welcome to the enhanced FastAPI example",
+        "message": "Welcome to the To-Do List API",
         "docs": "/docs",
         "endpoints": {
-            "items": "/items"
+            "todos": "/todos"
         }
     }
 
