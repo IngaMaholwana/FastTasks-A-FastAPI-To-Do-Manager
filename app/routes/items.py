@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Path, Query, HTTPException, status
 from typing import List, Optional
 
-from ..models.item import ItemCreate, ItemResponse
+from ..models.todo import ItemCreate, ItemResponse
 from ..utils.exceptions import ItemNotFoundError
 
 router = APIRouter(prefix="/items", tags=["items"])
