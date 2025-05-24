@@ -1,71 +1,62 @@
 # app/routes/items.py
-from fastapi import APIRouter, Path, Query, HTTPException, status
-from typing import List, Optional
+from fastapi import APIRouter, Path, Query, HTTPException, status, Depends
+from sqlalchemy.orm import Session
+from typing import List
 
-from ..models.todo import TodoCreate, TodoResponse
-from ..utils.exceptions import ItemNotFoundError
+from app.db import SessionLocal
+from app.models.todo import Todo
+from app.schemas.todo import TodoCreate, TodoResponse
 
 router = APIRouter(prefix="/items", tags=["items"])
 
-# Mock database (in a real app, this would be a database)
-fake_items_db = {}
-item_counter = 0
+# Dependency to get the database session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @router.post("/", response_model=TodoResponse, status_code=status.HTTP_201_CREATED)
-async def create_item(item: TodoCreate):
+async def create_item(item: TodoCreate, db: Session = Depends(get_db)):
     """Create a new item"""
-    global item_counter
-    item_counter += 1
-
-    # Create new item with ID
-    item_dict = item.dict()
-    new_item = {**item_dict, "id": item_counter}
-
-    # Store in our fake database
-    fake_items_db[item_counter] = new_item
-
-    return new_item
+    db_item = Todo(**item.dict())
+    db.add(db_item)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
 
 @router.get("/{item_id}", response_model=TodoResponse)
-async def read_item(item_id: int = Path(..., gt=0)):
+async def read_item(item_id: int, db: Session = Depends(get_db)):
     """Get a specific item by ID"""
-    if item_id not in fake_items_db:
-        raise ItemNotFoundError(item_id)
-
-    return fake_items_db[item_id]
+    db_item = db.query(Todo).filter(Todo.id == item_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return db_item
 
 @router.get("/", response_model=List[TodoResponse])
-async def list_items(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(10, ge=1, le=100)
-):
+async def list_items(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     """List items with optional filtering and pagination"""
-    items = list(fake_items_db.values())
-
-    # Apply pagination
-    return items[skip:skip+limit]
+    return db.query(Todo).offset(skip).limit(limit).all()
 
 @router.put("/{item_id}", response_model=TodoResponse)
-async def update_item(
-    item_id: int = Path(..., gt=0, description="The ID of the item to update"),
-    updated_item: TodoCreate = None
-):
+async def update_item(item_id: int, updated_item: TodoCreate, db: Session = Depends(get_db)):
     """Update a specific item by ID"""
-    if item_id not in fake_items_db:
-        raise ItemNotFoundError(item_id)
-
-    existing_item = fake_items_db[item_id]
-    updated_data = updated_item.dict()
-    updated_item_with_id = {**existing_item, **updated_data}
-    fake_items_db[item_id] = updated_item_with_id
-
-    return updated_item_with_id
+    db_item = db.query(Todo).filter(Todo.id == item_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    for key, value in updated_item.dict().items():
+        setattr(db_item, key, value)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_item(item_id: int = Path(..., gt=0)):
+async def delete_item(item_id: int, db: Session = Depends(get_db)):
     """Delete a specific item by ID"""
-    if item_id not in fake_items_db:
-        raise ItemNotFoundError(item_id)
-
-    del fake_items_db[item_id]
+    db_item = db.query(Todo).filter(Todo.id == item_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    db.delete(db_item)
+    db.commit()
     return
