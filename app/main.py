@@ -1,6 +1,6 @@
 # app/main.py
 from fastapi import FastAPI
-from .routes import items
+from .routes import todos
 from .utils.exceptions import add_exception_handlers
 
 # Create FastAPI application
@@ -11,7 +11,7 @@ app = FastAPI(
 )
 
 # Add routes
-app.include_router(items.router)
+app.include_router(todos.router)
 
 # Configure exception handlers
 add_exception_handlers(app)
