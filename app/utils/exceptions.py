@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
@@ -8,6 +8,13 @@ class TodoNotFoundError(Exception):
         self.todo_id = todo_id
         self.message = f"To-do item with ID {todo_id} not found"
         super().__init__(self.message)
+
+class ItemNotFoundError(HTTPException):
+    def __init__(self, item_id: int):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Item with ID {item_id} not found."
+        )
 
 def add_exception_handlers(app: FastAPI) -> None:
     """Add custom exception handlers to the FastAPI application"""

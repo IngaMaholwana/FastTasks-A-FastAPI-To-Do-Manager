@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Path, Query, HTTPException, status
 from typing import List, Optional
 
-from ..models.todo import ItemCreate, ItemResponse
+from ..models.todo import TodoCreate, TodoResponse
 from ..utils.exceptions import ItemNotFoundError
 
 router = APIRouter(prefix="/items", tags=["items"])
@@ -11,8 +11,8 @@ router = APIRouter(prefix="/items", tags=["items"])
 fake_items_db = {}
 item_counter = 0
 
-@router.post("/", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
-async def create_item(item: ItemCreate):
+@router.post("/", response_model=TodoResponse, status_code=status.HTTP_201_CREATED)
+async def create_item(item: TodoCreate):
     """Create a new item"""
     global item_counter
     item_counter += 1
@@ -26,7 +26,7 @@ async def create_item(item: ItemCreate):
 
     return new_item
 
-@router.get("/{item_id}", response_model=ItemResponse)
+@router.get("/{item_id}", response_model=TodoResponse)
 async def read_item(
     item_id: int = Path(..., gt=0, description="The ID of the item to retrieve")
 ):
@@ -36,7 +36,7 @@ async def read_item(
 
     return fake_items_db[item_id]
 
-@router.get("/", response_model=List[ItemResponse])
+@router.get("/", response_model=List[TodoResponse])
 async def list_items(
     skip: int = Query(0, ge=0, description="Number of items to skip"),
     limit: int = Query(10, ge=1, le=100, description="Maximum number of items to return"),
