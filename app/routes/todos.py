@@ -27,9 +27,7 @@ async def create_item(item: TodoCreate):
     return new_item
 
 @router.get("/{item_id}", response_model=TodoResponse)
-async def read_item(
-    item_id: int = Path(..., gt=0, description="The ID of the item to retrieve")
-):
+async def read_item(item_id: int = Path(..., gt=0)):
     """Get a specific item by ID"""
     if item_id not in fake_items_db:
         raise ItemNotFoundError(item_id)
@@ -38,16 +36,20 @@ async def read_item(
 
 @router.get("/", response_model=List[TodoResponse])
 async def list_items(
-    skip: int = Query(0, ge=0, description="Number of items to skip"),
-    limit: int = Query(10, ge=1, le=100, description="Maximum number of items to return"),
-    tag: Optional[str] = Query(None, description="Filter items by tag")
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1, le=100)
 ):
     """List items with optional filtering and pagination"""
     items = list(fake_items_db.values())
 
-    # Filter by tag if provided
-    if tag:
-        items = [item for item in items if tag in item.get("tags", [])]
-
     # Apply pagination
     return items[skip:skip+limit]
+
+@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_item(item_id: int = Path(..., gt=0)):
+    """Delete a specific item by ID"""
+    if item_id not in fake_items_db:
+        raise ItemNotFoundError(item_id)
+
+    del fake_items_db[item_id]
+    return
