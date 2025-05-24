@@ -45,6 +45,22 @@ async def list_items(
     # Apply pagination
     return items[skip:skip+limit]
 
+@router.put("/{item_id}", response_model=TodoResponse)
+async def update_item(
+    item_id: int = Path(..., gt=0, description="The ID of the item to update"),
+    updated_item: TodoCreate = None
+):
+    """Update a specific item by ID"""
+    if item_id not in fake_items_db:
+        raise ItemNotFoundError(item_id)
+
+    existing_item = fake_items_db[item_id]
+    updated_data = updated_item.dict()
+    updated_item_with_id = {**existing_item, **updated_data}
+    fake_items_db[item_id] = updated_item_with_id
+
+    return updated_item_with_id
+
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_item(item_id: int = Path(..., gt=0)):
     """Delete a specific item by ID"""
